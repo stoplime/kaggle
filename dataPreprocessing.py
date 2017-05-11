@@ -1,10 +1,11 @@
 # Data arrangement and processing
 import os
 import numpy as np
-import PIL
+import tifffile as tiff
 import csv
 import time
 import progressbar as pb
+import pandas as pd
 
 def load_X_train_data(path, n_images):
     # Chose path to the folder containing the training data in .jpg format:
@@ -38,7 +39,7 @@ def load_Y_data(path, n_images):
     image_and_tags = csv_reader(csv_path)[:n_images]
     labels = label_lister(image_and_tags)
     Y_train = list_to_vec(image_and_tags['tags'], labels)
-    return image_and_tags, labels, Y_train
+    return Y_train
 
 def getkey(item):
     return item[0]
@@ -49,6 +50,7 @@ def load_jpg_images(folder, N):
         N = int(len(_list))
     elif N is 'half':
         N = int(len(_list)/2)
+    # print("**** DATA: ", _list[0])
     _list_n = [(int(''.join(list(filter(str.isdigit, x)))), _list[i]) for i, x in enumerate(_list)]
     # print(_list_n[0])
     _list_n = sorted(_list_n, key=getkey)
@@ -60,7 +62,7 @@ def load_jpg_images(folder, N):
             break
         # print("\n", _filename[1], "testing:)")
         filename = _filename[1]
-        img = np.array(PIL.Image.open(os.path.join(folder, filename)))/255
+        img = np.array(tiff.imread(os.path.join(folder, filename)))/255
         if img is not None:
             images.append(img)
             filenames.append(filename)
