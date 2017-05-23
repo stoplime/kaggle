@@ -3,3 +3,5 @@
 *.csv
 *.jpg
 *.tif
+*.h5
+*.json

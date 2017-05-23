@@ -7,36 +7,36 @@ import time
 import progressbar as pb
 import pandas as pd
 
-def load_X_train_data(path, n_images):
+def load_X_train_data(path, begin_images, n_images):
     # Chose path to the folder containing the training data in .jpg format:
     train_data_path = path
     # Chose number of images to load.
     # Type 'all' to load all the images in the folder, or 'half' to load half of them
 
     print('Loading Train Data: ')
-    X_train, X_name_of_each_train = load_jpg_images(train_data_path, n_images)
+    X_train, X_name_of_each_train = load_jpg_images(train_data_path, begin_images, n_images)
     X_train = np.array(X_train)
 
     print('Shape or train images array: ', X_train.shape)
     return X_train, X_name_of_each_train
 
-def load_X_test_data(path, n_images):
+def load_X_test_data(path, begin_images, n_images):
     # Chose path to the folder containing the test data in .jpg format:
     test_data_path = path
     # Chose number of images to load.
     # Type 'all' to load all the images in the folder, or 'half' to load half of them
     print('Loading Test Data: ')
-    X_test, X_name_of_each_test = load_jpg_images(test_data_path, n_images)
+    X_test, X_name_of_each_test = load_jpg_images(test_data_path, begin_images, n_images)
     X_test = np.array(X_test)
 
     print('Number of test images: ',  X_test.shape)
     return X_test, X_name_of_each_test
 
-def load_Y_data(path, n_images):
+def load_Y_data(path, begin_images, n_images):
     # Chose path to the .csv file containing the labels: 
     csv_path = path
 
-    image_and_tags = csv_reader(csv_path)[:n_images]
+    image_and_tags = csv_reader(csv_path)[begin_images:begin_images+n_images]
     labels = label_lister(image_and_tags)
     Y_train = list_to_vec(image_and_tags['tags'], labels)
     return Y_train
@@ -44,12 +44,9 @@ def load_Y_data(path, n_images):
 def getkey(item):
     return item[0]
 
-def load_jpg_images(folder, N):
+def load_jpg_images(folder, start, N):
     _list = os.listdir(folder)
-    if N is 'all':
-        N = int(len(_list))
-    elif N is 'half':
-        N = int(len(_list)/2)
+    
     # print("**** DATA: ", _list[0])
     _list_n = [(int(''.join(list(filter(str.isdigit, x)))), _list[i]) for i, x in enumerate(_list)]
     # print(_list_n[0])
@@ -57,16 +54,15 @@ def load_jpg_images(folder, N):
     pbar = pb.ProgressBar(widgets=[pb.Percentage(), pb.Bar(), ], max_value=N).start() # max_value=len(list)).start()
     images = []
     filenames = []
-    for i, _filename in enumerate(_list_n):
-        if i >= N:
+    for i, _filename in enumerate(_list_n, start=start):
+        if i >= N + start:
             break
-        # print("\n", _filename[1], "testing:)")
         filename = _filename[1]
         img = np.array(tiff.imread(os.path.join(folder, filename)))/255
         if img is not None:
             images.append(img)
             filenames.append(filename)
-        pbar.update(i)
+        pbar.update(i-start)
     pbar.finish()
     return images, filenames
 
