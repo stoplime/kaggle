@@ -5,9 +5,10 @@ import json
 import numpy as np
 
 from sklearn.metrics import fbeta_score
+from custom_metric import FScore2
 
 from keras.models import Model
-from keras.layers import Input
+from keras.layers import Input, Dense
 from keras import metrics, losses
 
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
@@ -24,27 +25,33 @@ class class_model(object):
         self.output_size = output_classes
 
     def create_model(self, model_type='xception'):
-        if(model_type == 'inceptionv3'):
-            self.model = InceptionV3(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
-        elif(model_type == 'resnet50'):
+        if(model_type == 'inceptionv3' or model_type == 1):
+            base = InceptionV3(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
+            self.model = Model(base.input, pred, name='inception_v3')
+        elif(model_type == 'resnet50' or model_type == 2):
             self.model = ResNet50(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
-        elif(model_type == 'vgg19'):
+        elif(model_type == 'vgg19' or model_type == 3):
             self.model = VGG19(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
-        elif(model_type == 'vgg16'):
+        elif(model_type == 'vgg16' or model_type == 4):
             self.model = VGG16(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
         else:
-            self.model = Xception(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
+            base = Xception(include_top=False, weights=None, input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
+            self.model = Model(base.input, pred, name='xception')
 
-        self.model.compile(loss=losses.binary_crossentropy, optimizer='adam', metrics=[metrics.binary_accuracy])
+        self.model.compile(loss=losses.binary_crossentropy, optimizer='adam', metrics=[FScore2])
+        # losses.binary_crossentropy
+        # metrics.binary_accuracy
 
     def train_model(self, input_train, labels, validation=None, save_path=None):
-        num_epochs = 2
+        num_epochs = 15
         batch_size = 8
 
         logging = TensorBoard()
         if save_path != None:
-            checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='val_loss', save_weights_only=True, save_best_only=True)
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=1, mode='auto')
+            checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='FScore2', save_weights_only=True, save_best_only=True)
+        early_stopping = EarlyStopping(monitor='FScore2', min_delta=0, patience=10, verbose=1, mode='auto')
 
         if validation==None:
             history = self.model.fit(input_train, labels, validation_split=0.2, batch_size=batch_size, epochs=num_epochs, verbose=1, callbacks=[logging, checkpoint, early_stopping])

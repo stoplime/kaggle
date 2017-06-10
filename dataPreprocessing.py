@@ -7,6 +7,15 @@ import time
 import progressbar as pb
 import pandas as pd
 
+
+def load_data_dynamic(path, n_images, lable_path=None):
+    data_path = path
+    if lable_path == None:
+        lable_path = path
+    
+    x_train = load_jpg_images(train_data_path, begin_images, n_images)
+
+
 def load_X_train_data(path, begin_images, n_images):
     # Chose path to the folder containing the training data in .jpg format:
     train_data_path = path
@@ -19,18 +28,6 @@ def load_X_train_data(path, begin_images, n_images):
 
     print('Shape or train images array: ', X_train.shape)
     return X_train, X_name_of_each_train
-
-def load_X_test_data(path, begin_images, n_images):
-    # Chose path to the folder containing the test data in .jpg format:
-    test_data_path = path
-    # Chose number of images to load.
-    # Type 'all' to load all the images in the folder, or 'half' to load half of them
-    print('Loading Test Data: ')
-    X_test, X_name_of_each_test = load_jpg_images(test_data_path, begin_images, n_images)
-    X_test = np.array(X_test)
-
-    print('Number of test images: ',  X_test.shape)
-    return X_test, X_name_of_each_test
 
 def load_Y_data(path, begin_images, n_images):
     # Chose path to the .csv file containing the labels: 
