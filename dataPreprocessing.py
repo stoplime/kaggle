@@ -8,13 +8,55 @@ import progressbar as pb
 import pandas as pd
 
 
-def load_data_dynamic(path, n_images, lable_path=None):
+def load_data_dynamic(path, lable_path=None, batch_size=8):
     data_path = path
     if lable_path == None:
         lable_path = path
     
-    x_train = load_jpg_images(train_data_path, begin_images, n_images)
+    value_max = 65535
+    _list = os.listdir(data_path)
+    _list_n = [(int(''.join(list(filter(str.isdigit, x)))), _list[i]) for i, x in enumerate(_list)]
+    _list_n = sorted(_list_n, key=getkey)
 
+    labels = ['primary', 'clear', 'agriculture', 'road', 'water', 'partly_cloudy', 'cultivation', 'habitation', 'haze', 'cloudy', 'bare_ground', 'selective_logging', 'artisinal_mine', 'blooming', 'slash_burn', 'blow_down', 'conventional_mine']
+    while 1:
+        with open(lable_path) as f:
+            reader = csv.reader(f)
+            next(reader)
+            # for b in range(batch_size):
+            #     print("batch: ", b)
+            x_train = []
+            y_train = []
+            for i, _filename in enumerate(_list_n):
+                filename = _filename[1]
+                img = np.array(tiff.imread(os.path.join(data_path, filename))) / value_max
+                img = img.take((0, 1, 3), axis=-1)
+                row = next(reader)
+                tags = row[-1].split(' ')
+                vec = np.zeros((len(labels),), dtype=int)
+                for j in range(len(labels)):
+                    if labels[j] in tags:
+                        vec[j] = 1
+                    else:
+                        vec[j] = 0
+                x_train.append(img)
+                y_train.append(vec)
+                if i % batch_size == 0:
+                    # print("batch: ", i)
+                    x_train = np.asarray(x_train)
+                    y_train = np.asarray(y_train)
+                    yield (x_train, y_train)
+                    x_train = []
+                    y_train = []
+
+    # while 1:
+    # f = open(path)
+    # for line in f:
+    #     # create numpy arrays of input data
+    #     # and labels, from each line in the file
+    #     x1, x2, y = process_line(line)
+    #     yield ({'input_1': x1, 'input_2': x2}, {'output': y})
+    # f.close()
 
 def load_X_train_data(path, begin_images, n_images):
     # Chose path to the folder containing the training data in .jpg format:

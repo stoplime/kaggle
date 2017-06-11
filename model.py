@@ -36,11 +36,11 @@ class class_model(object):
         elif(model_type == 'vgg16' or model_type == 4):
             self.model = VGG16(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
         else:
-            base = Xception(include_top=False, weights=None, input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            base = Xception(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
             pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
             self.model = Model(base.input, pred, name='xception')
 
-        self.model.compile(loss=losses.binary_crossentropy, optimizer='adam', metrics=[FScore2])
+        self.model.compile(loss=losses.categorical_crossentropy, optimizer='adam', metrics=[FScore2])
         # losses.binary_crossentropy
         # metrics.binary_accuracy
 
@@ -50,8 +50,8 @@ class class_model(object):
 
         logging = TensorBoard()
         if save_path != None:
-            checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='FScore2', save_weights_only=True, save_best_only=True)
-        early_stopping = EarlyStopping(monitor='FScore2', min_delta=0, patience=10, verbose=1, mode='auto')
+            checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='val_FScore2', save_weights_only=True, save_best_only=True)
+        early_stopping = EarlyStopping(monitor='val_FScore2', min_delta=0.01, patience=5, verbose=1, mode='max')
 
         if validation==None:
             history = self.model.fit(input_train, labels, validation_split=0.2, batch_size=batch_size, epochs=num_epochs, verbose=1, callbacks=[logging, checkpoint, early_stopping])
