@@ -8,12 +8,13 @@ import progressbar as pb
 import pandas as pd
 
 
-def load_data_dynamic(path, lable_path=None, batch_size=8):
+def load_data_dynamic(path, lable_path=None, batch_size=8, val_split=None):
     data_path = path
     if lable_path == None:
         lable_path = path
     
     value_max = 65535
+    val_split = 3900
     _list = os.listdir(data_path)
     _list_n = [(int(''.join(list(filter(str.isdigit, x)))), _list[i]) for i, x in enumerate(_list)]
     _list_n = sorted(_list_n, key=getkey)
@@ -28,6 +29,9 @@ def load_data_dynamic(path, lable_path=None, batch_size=8):
             x_train = []
             y_train = []
             for i, _filename in enumerate(_list_n):
+                if val_split != None:
+                    if i >= val_split:
+                        break
                 filename = _filename[1]
                 img = np.array(tiff.imread(os.path.join(data_path, filename))) / value_max
                 img = img.take((0, 1, 3), axis=-1)

@@ -37,7 +37,7 @@ def sequential_training():
 
         # 3 channel split
         channel_split = 1
-        _train = train.take((0, 1, 3), axis=3)
+        _train = train.take((0, 1, 3), axis=-1)
         # for channel_split in range(4):
         # if channel_split == 0:
         #     _train = train.take((0, 1, 2), axis=3)
@@ -66,13 +66,25 @@ def sequential_training():
 def dynamic_training():
     channel_split = 1
     total_num_images = 40478
-    batch_size = 84
+    batch_size = 80
+    val_num = 1000
+    val_begin = total_num_images-val_num
     save_path = os.path.join(PATH, "saved_models", "m_"+str(model_type)+"_c_"+str(channel_split))
+
     logging = TensorBoard()
     checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='val_FScore2', save_weights_only=True, save_best_only=True)
-    early_stopping = EarlyStopping(monitor='val_FScore2', min_delta=0.01, patience=5, verbose=1, mode='max')
-    history = model.get_model().fit_generator(load_data_dynamic(train_path, lable_path=lable_path, batch_size=batch_size), steps_per_epoch=5, epochs=15, validation_data=, max_q_size=128, verbose=1, callbacks=[logging, checkpoint, early_stopping])
+    # early_stopping = EarlyStopping(monitor='val_FScore2', min_delta=0.01, patience=5, verbose=1, mode='max')
+
+    data_gen = load_data_dynamic(train_path, lable_path=lable_path, batch_size=batch_size, val_split=val_begin)
+    print("Loading validation data")
+    x_val, train_names = load_X_train_data(train_path, val_begin, val_num)
+    x_val = np.array(x_val)
+    x_val = x_val.take((0, 1, 3), axis=-1)
+    y_val = load_Y_data(lable_path, val_begin, val_num)
+
+    history = model.get_model().fit_generator(data_gen, steps_per_epoch=total_num_images//batch_size, epochs=15, validation_data=(x_val, y_val), max_q_size=128, verbose=1, callbacks=[logging, checkpoint])
     # total_num_images//batch_size
+
     with open(os.path.join(PATH, "saved_models", "m_"+str(model_type)+"_c_"+str(channel_split)+".json"), 'w') as f:
         data = []
         accuracy = model.kaggle_metric(input_val=x_val, labels_val=y_val)
