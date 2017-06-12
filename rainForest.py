@@ -14,7 +14,7 @@ PATH = os.path.dirname(os.path.abspath(__file__))
 train_path = os.path.join(PATH, "train-tif-v2")
 lable_path = os.path.join(PATH, "train_v2.csv")
 
-model_type = 1
+model_type = 0
 
 model = class_model(input_shape=(256, 256, 3))
 model.create_model(model_type=model_type)
@@ -66,8 +66,8 @@ def sequential_training():
 def dynamic_training():
     channel_split = 1
     total_num_images = 40478
-    batch_size = 80
-    val_num = 1000
+    batch_size = 16
+    val_num = 5000
     val_begin = total_num_images-val_num
     save_path = os.path.join(PATH, "saved_models", "m_"+str(model_type)+"_c_"+str(channel_split))
 
@@ -94,4 +94,7 @@ def dynamic_training():
         json.dump(data, f, indent=4)
 
 if __name__ == "__main__":
-    dynamic_training()
+    for i in range(5):
+        model = class_model(input_shape=(256, 256, 3))
+        model.create_model(model_type=i)
+        dynamic_training()

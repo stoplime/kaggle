@@ -27,18 +27,21 @@ class class_model(object):
     def create_model(self, model_type='xception'):
         if(model_type == 'inceptionv3' or model_type == 1):
             base = InceptionV3(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
-            pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
-            self.model = Model(base.input, pred, name='inception_v3')
+            model_name = 'inceptionv3'
         elif(model_type == 'resnet50' or model_type == 2):
-            self.model = ResNet50(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
+            base = ResNet50(lableinclude_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            model_name = 'resnet50'
         elif(model_type == 'vgg19' or model_type == 3):
-            self.model = VGG19(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
+            base = VGG19(lableinclude_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            model_name = 'vgg19'
         elif(model_type == 'vgg16' or model_type == 4):
-            self.model = VGG16(include_top=True, weights=None, input_tensor=self.input_tensor, classes=self.output_size)
+            base = VGG16(lableinclude_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            model_name = 'vgg16'
         else:
             base = Xception(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
-            pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
-            self.model = Model(base.input, pred, name='xception')
+            model_name = 'xception'
+        pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
+        self.model = Model(base.input, pred, name=model_name)
 
         self.model.compile(loss=losses.categorical_crossentropy, optimizer='adam', metrics=[FScore2])
         # losses.binary_crossentropy
