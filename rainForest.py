@@ -11,13 +11,14 @@ from model import class_model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 
 PATH = os.path.dirname(os.path.abspath(__file__))
-train_path = os.path.join(PATH, "train-tif-v2")
+test_path = os.path.join(PATH, "test-jpg")
+train_path = os.path.join(PATH, "train-jpg")
 lable_path = os.path.join(PATH, "train_v2.csv")
 
 model_type = 0
 
-model = class_model(input_shape=(256, 256, 3))
-model.create_model(model_type=model_type)
+# model = class_model(input_shape=(256, 256, 3))
+# model.create_model(model_type=model_type)
 
 number_of_images = 5000
 split_ratio = 0.1
@@ -66,35 +67,44 @@ def sequential_training():
 def dynamic_training():
     channel_split = 1
     total_num_images = 40478
-    batch_size = 16
+    batch_size = 32
     val_num = 5000
     val_begin = total_num_images-val_num
-    save_path = os.path.join(PATH, "saved_models", "m_"+str(model_type)+"_c_"+str(channel_split))
+    model_name = str(model_type)+"_bi_multiDropout2_3"
+    save_path = os.path.join(PATH, "saved_models", model_name)
 
     logging = TensorBoard()
-    checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='val_FScore2', save_weights_only=True, save_best_only=True)
+    checkpoint = ModelCheckpoint(str(save_path)+".h5", monitor='val_FScore2', save_weights_only=False, save_best_only=True)
     # early_stopping = EarlyStopping(monitor='val_FScore2', min_delta=0.01, patience=5, verbose=1, mode='max')
 
     data_gen = load_data_dynamic(train_path, lable_path=lable_path, batch_size=batch_size, val_split=val_begin)
     print("Loading validation data")
     x_val, train_names = load_X_train_data(train_path, val_begin, val_num)
     x_val = np.array(x_val)
-    x_val = x_val.take((0, 1, 3), axis=-1)
+    x_val = x_val.take((0, 1, 2), axis=-1)
+    #x_val = np.swapaxes(x_val, -1, 1)
     y_val = load_Y_data(lable_path, val_begin, val_num)
-
+    # print("val", x_val.shape)
     history = model.get_model().fit_generator(data_gen, steps_per_epoch=total_num_images//batch_size, epochs=15, validation_data=(x_val, y_val), max_q_size=128, verbose=1, callbacks=[logging, checkpoint])
     # total_num_images//batch_size
 
-    with open(os.path.join(PATH, "saved_models", "m_"+str(model_type)+"_c_"+str(channel_split)+".json"), 'w') as f:
+    with open(os.path.join(PATH, "saved_models", model_name+".json"), 'w') as f:
         data = []
         accuracy = model.kaggle_metric(input_val=x_val, labels_val=y_val)
         print(accuracy)
         data.append(accuracy)
         data.append(history.history)
         json.dump(data, f, indent=4)
+    
+    test_gen = load_data_dynamic
+    with open(os.path.join(PATH, "saved_models", "valPred_"+model_name+".json"), 'w') as f:
+        pred = model.get_model().predict(x_val, batch_size=32, verbose=1)
+        json.dump(pred.tolist(), f, indent=4)
 
 if __name__ == "__main__":
-    for i in range(5):
-        model = class_model(input_shape=(256, 256, 3))
-        model.create_model(model_type=i)
-        dynamic_training()
+    model_type = 'inceptionv3MOD'
+    model = class_model(input_shape=(256, 256, 3))
+    model.create_model(model_type=model_type)
+    # model.create_model(model_type=model_type, load_weights=os.path.join(PATH, "saved_models", "resnet50_shallow.h5"))
+    # model.load_weights(os.path.join(PATH, "saved_models", "resnet50_shallow.h5"))
+    dynamic_training()

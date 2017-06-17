@@ -6,20 +6,21 @@ import csv
 import time
 import progressbar as pb
 import pandas as pd
+import PIL
 
+labels = ['primary', 'clear', 'agriculture', 'road', 'water', 'partly_cloudy', 'cultivation', 'habitation', 'haze', 'cloudy', 'bare_ground', 'selective_logging', 'artisinal_mine', 'blooming', 'slash_burn', 'blow_down', 'conventional_mine']
 
 def load_data_dynamic(path, lable_path=None, batch_size=8, val_split=None):
     data_path = path
     if lable_path == None:
         lable_path = path
     
-    value_max = 65535
-    val_split = 3900
+    # value_max = 65535
+    value_max = 255
     _list = os.listdir(data_path)
     _list_n = [(int(''.join(list(filter(str.isdigit, x)))), _list[i]) for i, x in enumerate(_list)]
     _list_n = sorted(_list_n, key=getkey)
 
-    labels = ['primary', 'clear', 'agriculture', 'road', 'water', 'partly_cloudy', 'cultivation', 'habitation', 'haze', 'cloudy', 'bare_ground', 'selective_logging', 'artisinal_mine', 'blooming', 'slash_burn', 'blow_down', 'conventional_mine']
     while 1:
         with open(lable_path) as f:
             reader = csv.reader(f)
@@ -33,8 +34,11 @@ def load_data_dynamic(path, lable_path=None, batch_size=8, val_split=None):
                     if i >= val_split:
                         break
                 filename = _filename[1]
-                img = np.array(tiff.imread(os.path.join(data_path, filename))) / value_max
-                img = img.take((0, 1, 3), axis=-1)
+                # img = np.array(tiff.imread(os.path.join(data_path, filename))) / value_max
+                img = np.array(PIL.Image.open(os.path.join(data_path, filename))) / value_max
+                img = img.take((0, 1, 2), axis=-1)
+                #img = np.swapaxes(img, -1, 1)
+                # print("img", img.shape)
                 row = next(reader)
                 tags = row[-1].split(' ')
                 vec = np.zeros((len(labels),), dtype=int)
@@ -49,6 +53,7 @@ def load_data_dynamic(path, lable_path=None, batch_size=8, val_split=None):
                     # print("batch: ", i)
                     x_train = np.asarray(x_train)
                     y_train = np.asarray(y_train)
+                    # print("data_gen", x_train.shape)
                     yield (x_train, y_train)
                     x_train = []
                     y_train = []
@@ -101,7 +106,9 @@ def load_jpg_images(folder, start, N):
         if i >= N + start:
             break
         filename = _filename[1]
-        img = np.array(tiff.imread(os.path.join(folder, filename)))/255
+        # img = np.array(tiff.imread(os.path.join(folder, filename)))/255
+        img = np.array(PIL.Image.open(os.path.join(folder, filename)))/255
+        # print("img_SHAPE", img.shape)
         if img is not None:
             images.append(img)
             filenames.append(filename)

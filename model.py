@@ -9,41 +9,75 @@ from custom_metric import FScore2
 
 from keras.models import Model
 from keras.layers import Input, Dense
+from keras.layers.core import Dropout
 from keras import metrics, losses
 
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 
 from keras.applications.xception import Xception
 from keras.applications.inception_v3 import InceptionV3
+from keras.applications.inception_v3_mod import InceptionV3MOD
 from keras.applications.resnet50 import ResNet50
 from keras.applications.vgg19 import VGG19 
 from keras.applications.vgg16 import VGG16
 
+import sys
+import os
+PATH = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(PATH, "resnet", "keras-resnet"))
+from resnet import ResnetBuilder
+
 class class_model(object):
-    def __init__(self, input_shape=(256, 256, 4), output_classes=17):
+    def __init__(self, input_shape=(256, 256, 3), output_classes=17):
         self.input_tensor = Input(input_shape)
+        self.input_shape = input_shape
         self.output_size = output_classes
 
-    def create_model(self, model_type='xception'):
+    def create_model(self, model_type='xception', load_weights=None):
         if(model_type == 'inceptionv3' or model_type == 1):
             base = InceptionV3(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
             model_name = 'inceptionv3'
+            pred = base.output
         elif(model_type == 'resnet50' or model_type == 2):
-            base = ResNet50(lableinclude_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            base = ResNet50(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
             model_name = 'resnet50'
+            pred = base.output
         elif(model_type == 'vgg19' or model_type == 3):
-            base = VGG19(lableinclude_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            base = VGG19(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
             model_name = 'vgg19'
+            pred = base.output
         elif(model_type == 'vgg16' or model_type == 4):
-            base = VGG16(lableinclude_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            base = VGG16(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
             model_name = 'vgg16'
+            pred = base.output
+        elif(model_type == 'resnet152' or model_type == 5):
+            resbuild = ResnetBuilder()
+            base = resbuild.build_resnet_152(self.input_shape, self.output_size)
+            model_name = 'resnet152'
+            pred = base.output
+        elif(model_type == 'resnet50MOD' or model_type == 6):
+            resbuild = ResnetBuilder()
+            base = resbuild.build_resnet_50(self.input_shape, self.output_size)
+            model_name = 'resnet50MOD'
+            pred = base.output
+        elif(model_type == 'inceptionv3MOD' or model_type == 7):
+            base = InceptionV3MOD(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
+            model_name = 'inceptionv3MOD'
+            pred = base.output
         else:
             base = Xception(include_top=False, weights='imagenet', input_tensor=self.input_tensor, classes=self.output_size, pooling='avg')
             model_name = 'xception'
-        pred = Dense(self.output_size, activation='sigmoid', name='predictions')(base.output)
+            pred = base.output
+        pred = Dense(self.output_size, activation='sigmoid', name='predictions')(pred)
         self.model = Model(base.input, pred, name=model_name)
 
-        self.model.compile(loss=losses.categorical_crossentropy, optimizer='adam', metrics=[FScore2])
+        if load_weights != None:
+            self.model.load_weights(load_weights)
+
+        for layer in base.layers:
+            layer.trainable = True
+
+        self.model.compile(loss=losses.binary_crossentropy, optimizer='adam', metrics=[FScore2])
         # losses.binary_crossentropy
         # metrics.binary_accuracy
 
