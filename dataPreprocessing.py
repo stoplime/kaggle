@@ -126,7 +126,7 @@ def label_lister(labels_df):
     label_list = []
     for tag_str in labels_df.tags.values:
         labels = tag_str.split(' ')
-        for label in labels:
+        for label in labels: 
             if label not in label_list:
                 label_list.append(label)
     return label_list

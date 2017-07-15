@@ -99,7 +99,7 @@ def dynamic_training():
     test_gen = load_data_dynamic
     with open(os.path.join(PATH, "saved_models", "valPred_"+model_name+".json"), 'w') as f:
         pred = model.get_model().predict(x_val, batch_size=32, verbose=1)
-        json.dump(pred.tolist(), f, indent=4)
+        json.dump(pred.tolist(), f, indent=None)
 
 if __name__ == "__main__":
     model_type = 'inceptionv3MOD'
